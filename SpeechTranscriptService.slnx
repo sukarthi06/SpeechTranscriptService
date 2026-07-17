@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SpeechTranscriptService.Application/SpeechTranscriptService.Application.csproj" />
+  <Project Path="SpeechTranscriptService.Domain/SpeechTranscriptService.Domain.csproj" />
+  <Project Path="SpeechTranscriptService.Infra/SpeechTranscriptService.Infra.csproj" />
+  <Project Path="SpeechTranscriptService.Worker/SpeechTranscriptService.Worker.csproj" />
+</Solution>
