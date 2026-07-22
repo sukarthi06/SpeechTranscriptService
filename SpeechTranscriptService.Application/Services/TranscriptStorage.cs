@@ -6,7 +6,8 @@ using SpeechTranscriptService.Infra.Interfaces;
 
 namespace SpeechTranscriptService.Application.Services;
 
-public class TranscriptStorage(ITranscriptObjectStorage transcriptStorage,
+public class TranscriptStorage(
+    ITranscriptObjectStorage transcriptStorage,
     IRecordingChunkGrpcClient recordingChunkGrpcClient,
     ILogger<TranscriptStorage> logger) : ITranscriptStorage
 {
@@ -32,5 +33,19 @@ public class TranscriptStorage(ITranscriptObjectStorage transcriptStorage,
         var result = await recordingChunkGrpcClient.UpdateTranscriptPathAsync(chunkId, transcriptStoragePath, cancellationToken);
         if (!result) logger.LogWarning("Transcript storage path update failed for ChunkId: {ChunkId}", chunkId);
         return result;
+    }
+    
+    public async Task<TranscriptionResponse?> DownloadTranscriptAsync(ChunkId chunkId, string path, CancellationToken cancellationToken)
+    {
+        var response = await transcriptStorage.DownloadTranscriptAsync(chunkId, path, cancellationToken);
+        throw new NotImplementedException();
+    }
+
+    public async Task<bool> UploadRecordingTranscriptAsync(
+        RecordingTranscript recordingTranscript, string destinationPath, CancellationToken cancellationToken)
+    {
+        var response = await transcriptStorage.UploadRecordingTranscriptAsync(
+            destinationPath, recordingTranscript, cancellationToken);
+        return response;
     }
 }

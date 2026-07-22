@@ -20,6 +20,9 @@ public static class DependencyInjection
         services.AddScoped<IRecordingChunkServices, RecordingChunkServices>();
         services.AddScoped<IWavStorageReader, WavStorageReader>();
         services.AddScoped<ITranscriptStorage, TranscriptStorage>();
+        services.AddScoped<ITranscriptConsolidator, TranscriptConsolidator>();
+        services.AddScoped<ITranscriptMerger, TranscriptMerger>();
+        services.AddScoped<IRecordingService, RecordingService>();
 
         #region "OpenAI"
 

@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+option csharp_namespace = "RecordingGrpcService.Grpc.Protos";
+
+import "google/protobuf/timestamp.proto";
+
+package recordings;
+
+service RecordingService {
+  rpc SaveRecordingSession (RecordingSessionRequest) returns (RecordingSessionResponse);
+  rpc GetRecordingSession (GetRecordingSessionRequest) returns (GetRecordingSessionResponse);
+  rpc UpdateRecordingSession (UpdateRecordingSessionRequest) returns (UpdateRecordingSessionResponse);
+  rpc UpdateRecordingMetadata (UpdateRecordingMetadataRequest) returns (UpdateRecordingMetadataResponse);
+  rpc UpdateStoragePath (UpdateStoragePathRequest) returns (UpdateStoragePathResponse);
+  rpc UpdateWavPath (UpdateWavPathRequest) returns (UpdateWavPathResponse);
+  rpc UpdateTranscriptPath (UpdateTranscriptPathRequest) returns (UpdateTranscriptPathResponse);
+  rpc GetRecordingMetadata (GetRecordingMetadataRequest) returns (GetRecordingMetadataResponse);
+}
+
+message RecordingSessionRequest {
+  RecordingSessionDto recording_session = 1;
+}
+
+message RecordingSessionResponse {
+  bool is_success = 1;
+  RecordingSessionDto recording_session = 2;
+}
+
+message GetRecordingSessionRequest {
+  string recording_id = 1;
+}
+
+message GetRecordingSessionResponse {
+  RecordingSessionDto recording_session = 1;
+}
+
+message GetRecordingMetadataRequest {
+  string recording_id = 1;
+}
+
+message GetRecordingMetadataResponse {
+  RecordingMetadataDto metadata = 1;
+}
+
+message UpdateRecordingSessionRequest {
+  string recording_id = 1;
+  RecordingSessionDto recording_session = 2;
+}
+
+message UpdateRecordingSessionResponse {
+  bool is_success = 1;
+}
+
+message UpdateRecordingMetadataRequest {
+  string recording_id = 1;
+  RecordingMetadataDto metadata = 2;
+}
+
+message UpdateRecordingMetadataResponse {
+  bool is_success = 1;
+}
+
+message UpdateStoragePathRequest {
+  string recording_id = 1;
+  string storage_path = 2;
+}
+
+message UpdateStoragePathResponse {
+  bool is_success = 1;
+}
+
+message UpdateWavPathRequest {
+  string recording_id = 1;
+  string wav_path = 2;
+}
+
+message UpdateWavPathResponse {
+  bool is_success = 1;
+}
+
+message UpdateTranscriptPathRequest {
+  string recording_id = 1;
+  string transcript_path = 2;
+}
+
+message UpdateTranscriptPathResponse {
+  bool is_success = 1;
+}
+
+message RecordingIdDto {
+  string recording_id = 1;
+}
+
+enum RecordingStatus {
+	RECORDING_STATUS_UNSPECIFIED = 0;
+	STARTED = 1;
+	RECORDING = 2;
+	COMPLETED = 3;
+	FAILED = 4;
+}
+
+message RecordingMetadataDto {
+  int32 sample_rate = 1;
+  int32 channel_count = 2;
+  int32 bits_per_sample = 3;
+  string mime_type = 4;
+}
+
+message RecordingSessionDto {
+  string recording_id = 1;
+  RecordingStatus status = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp stopped_at = 4;
+  string storage_path = 5;
+  string wav_path = 6;
+  string transcript_path = 7;
+  RecordingMetadataDto metadata = 8;
+}

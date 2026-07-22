@@ -15,7 +15,22 @@ public class RecordingChunkGrpcClient(
         var response = await grpcClient.GetRecordingChunkAsync(
             new GetRecordingChunkRequest { ChunkId = mapper.MapChunkId(chunkId) },
             cancellationToken: cancellationToken);
-        return mapper.ToDomain(response.RecordingChunk);
+        return response is null? new RecordingChunk() : mapper.ToDomain(response.RecordingChunk);
+    }
+
+    public async Task<List<RecordingChunk>> GetRecordingChunksAsync(RecordingId recordingId, CancellationToken cancellationToken)
+    {
+        var response = await grpcClient.GetRecordingChunksAsync(
+            new GetRecordingChunksRequest { RecordingId = mapper.MapRecordingId(recordingId)},
+            cancellationToken:cancellationToken);
+        return response is null ? [] : mapper.ToDomainList(response.RecordingChunks);
+    }
+
+    public async Task<bool> IsChunksReadyForConsolidationAsync(RecordingId recordingId, CancellationToken cancellationToken)
+    {
+        var response = await grpcClient.IsChunksReadyForConsolidationAsync(
+            new IsChunksReadyRequest { RecordingId = mapper.MapRecordingId(recordingId) });
+        return response.IsSuccess;
     }
 
     public async Task<bool> UpdateTranscriptPathAsync(ChunkId chunkId, string transcriptStoragePath, CancellationToken cancellationToken)

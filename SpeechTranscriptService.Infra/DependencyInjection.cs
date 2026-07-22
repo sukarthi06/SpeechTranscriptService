@@ -25,6 +25,12 @@ public static class DependencyInjection
                 sp.GetRequiredService<ILogger<RabbitMqConsumer>>()
             ).GetAwaiter().GetResult());
 
+        services.AddSingleton<IMessagePublisher>(sp =>
+            RabbitMqPublisher.CreateAsync(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<RabbitMqPublisher>>()
+            ).GetAwaiter().GetResult());
+
         #endregion
 
         #region "Grpc"
@@ -33,8 +39,16 @@ public static class DependencyInjection
         {
             o.Address = new Uri(configuration["RecordingGrpcService:Address"]!);
         });
-        services.AddSingleton<RecordingChunkMapper>();
+        services.AddSingleton<RecordingChunkMapper>();        
         services.AddScoped<IRecordingChunkGrpcClient, RecordingChunkGrpcClient>();
+        
+
+        services.AddGrpcClient<RecordingService.RecordingServiceClient>(o =>
+        {
+            o.Address = new Uri(configuration["RecordingGrpcService:Address"]!);
+        });
+        services.AddSingleton<RecordingTranscriptPathMapper>();
+        services.AddScoped<IRecordingGrpcClient, RecordingGrpcClient>();
 
         #endregion
 

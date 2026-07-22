@@ -8,11 +8,15 @@ namespace SpeechTranscriptService.Infra.Mappers;
 [Mapper]
 public partial class RecordingChunkMapper : MapperBase
 {
-    // ---- RecordingChunk ----    
-    [MapperIgnoreSource(nameof(RecordingChunkDto.HasWavPath))]
-    [MapperIgnoreSource(nameof(RecordingChunkDto.HasTranscriptPath))]
+    // ---- RecordingChunk ----
+    [MapperIgnoreSource(nameof(RecordingChunkDto.StartTime))]
+    [MapperIgnoreSource(nameof(RecordingChunkDto.EndTime))]
+    [MapperIgnoreSource(nameof(RecordingChunkDto.ChunkDuration))]
     public partial RecordingChunk ToDomain(RecordingChunkDto dto);
 
+    [MapperIgnoreTarget(nameof(RecordingChunkDto.StartTime))]
+    [MapperIgnoreTarget(nameof(RecordingChunkDto.EndTime))]
+    [MapperIgnoreTarget(nameof(RecordingChunkDto.ChunkDuration))]
     public partial RecordingChunkDto ToDto(RecordingChunk entity);
 
     // ---- List mapping (used for GetRecordingChunkResponse's repeated field) ----
@@ -25,5 +29,5 @@ public partial class RecordingChunkMapper : MapperBase
 
     // ---- RecordingId (string <-> value object) ----
     private RecordingId MapRecordingId(string id) => RecordingId.Of(ParseGuid(id));
-    private string MapRecordingId(RecordingId id) => id.Value.ToString();
+    public string MapRecordingId(RecordingId id) => id.Value.ToString();
 }
