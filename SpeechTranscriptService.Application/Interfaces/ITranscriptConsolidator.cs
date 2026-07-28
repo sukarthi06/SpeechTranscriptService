@@ -1,5 +1,4 @@
-﻿using SpeechTranscriptService.Domain.Entities;
-using SpeechTranscriptService.Domain.ValueObjects;
+﻿using SpeechTranscriptService.Domain.ValueObjects;
 
 namespace SpeechTranscriptService.Application.Interfaces;
 

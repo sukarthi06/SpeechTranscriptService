@@ -104,7 +104,7 @@ public class RabbitMqConsumer(
 
             try
             {
-                logger.LogDebug("Received message from queue '{Queue}', delivery tag {Tag}",
+                logger.LogInformation("Received message from queue '{Queue}', delivery tag {Tag}",
                     QueueName, ea.DeliveryTag);
 
                 var json = Encoding.UTF8.GetString(ea.Body.Span);
@@ -156,7 +156,7 @@ public class RabbitMqConsumer(
     public async Task AcknowledgeAsync(ulong deliveryTag, CancellationToken ct)
     {
         await channel.BasicAckAsync(deliveryTag, multiple: false, cancellationToken: ct);
-        logger.LogDebug("Acked delivery tag {Tag} on queue '{Queue}'", deliveryTag, QueueName);
+        logger.LogInformation("Acked delivery tag {Tag} on queue '{Queue}'", deliveryTag, QueueName);
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public class RabbitMqConsumer(
     public async Task RejectAsync(ulong deliveryTag, CancellationToken ct)
     {
         await channel.BasicNackAsync(deliveryTag, multiple: false, requeue: false, cancellationToken: ct);
-        logger.LogDebug("Nacked delivery tag {Tag} on queue '{Queue}' (no requeue)", deliveryTag, QueueName);
+        logger.LogWarning("Nacked delivery tag {Tag} on queue '{Queue}' (no requeue)", deliveryTag, QueueName);
     }
 
     public async ValueTask DisposeAsync()
