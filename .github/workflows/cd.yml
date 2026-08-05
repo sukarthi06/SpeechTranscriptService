@@ -1,0 +1,157 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: speech-transcript-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Log source checkout status
+        run: |
+          echo "::notice title=Checkout completed::Deploying commit $(git rev-parse --short HEAD)."
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log Azure login status
+        run: |
+          subscription="$(az account show --query name --output tsv)"
+          echo "::notice title=Azure login completed::Authenticated to subscription: $subscription."
+
+      - name: Build and push image to ACR
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }} --resource-group ${{ vars.RG_NAME }}
+          docker buildx build -f SpeechTranscriptService.Worker/Dockerfile \
+            -t ${{ vars.ACR_LOGIN_SERVER }}/speech-transcript-worker-comp:${{ github.event.workflow_run.head_sha }} \
+            --push .
+          echo "::notice title=Container image published::Image pushed to ACR for commit ${{ github.event.workflow_run.head_sha }}."
+
+      - name: Wait for any active Container App operation
+        run: |
+          for attempt in {1..60}; do
+            state="$(az containerapp show --name speech-transcript-worker --resource-group ${{ vars.RG_NAME }} --query properties.provisioningState --output tsv)"
+            case "$state" in
+              Succeeded) echo "::notice title=Container App ready::No active Container App operation."; exit 0 ;;
+              Failed) echo "::warning title=Previous operation failed::Continuing with this corrective deployment."; exit 0 ;;
+              *) echo "Container App provisioning state: $state. Waiting..."; sleep 10 ;;
+            esac
+          done
+          echo "Timed out waiting for the Container App to become ready."
+          exit 1
+
+      - name: Set secrets on Container App
+        env:
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+        run: |
+          az containerapp secret set \
+            --name speech-transcript-worker \
+            --resource-group ${{ vars.RG_NAME }} \
+            --secrets \
+              "rabbitmq-password=$RABBITMQ_PASSWORD" \
+              "openai-api-key=$OPENAI_API_KEY" \
+              "storage-connection-string=$AZURE_STORAGE_CONNECTION_STRING"
+          echo "::notice title=Secret update completed::RabbitMQ password, OpenAI key, and storage connection string secrets were updated."
+
+      - name: Wait for secret update
+        run: |
+          for attempt in {1..60}; do
+            state="$(az containerapp show --name speech-transcript-worker --resource-group ${{ vars.RG_NAME }} --query properties.provisioningState --output tsv)"
+            case "$state" in
+              Succeeded) echo "::notice title=Secret update ready::Container App provisioning succeeded."; exit 0 ;;
+              Failed) echo "::warning title=Secret update reported failed::Continuing with this corrective deployment."; exit 0 ;;
+              *) echo "Container App provisioning state: $state. Waiting..."; sleep 10 ;;
+            esac
+          done
+          echo "Timed out waiting for secret update."
+          exit 1
+
+      - name: Deploy to Container App
+        env:
+          RABBITMQ_HOST: ${{ secrets.RABBITMQ_HOST }}
+          RABBITMQ_VHOST: ${{ secrets.RABBITMQ_VHOST }}
+          RABBITMQ_USERNAME: ${{ secrets.RABBITMQ_USERNAME }}
+        run: |
+          az containerapp update \
+            --name speech-transcript-worker \
+            --resource-group ${{ vars.RG_NAME }} \
+            --image ${{ vars.ACR_LOGIN_SERVER }}/speech-transcript-worker-comp:${{ github.event.workflow_run.head_sha }} \
+            --set-env-vars \
+              "ASPNETCORE_ENVIRONMENT=UAT" \
+              "RabbitMQ__Host=$RABBITMQ_HOST" \
+              "RabbitMQ__Port=5671" \
+              "RabbitMQ__VirtualHost=$RABBITMQ_VHOST" \
+              "RabbitMQ__Username=$RABBITMQ_USERNAME" \
+              "RabbitMQ__Password=secretref:rabbitmq-password" \
+              "OpenAI__ApiKey=secretref:openai-api-key" \
+              "Azure__StorageConnectionString=secretref:storage-connection-string"
+          echo "::notice title=Container App deployment completed::Azure accepted and completed the image update."
+
+      - name: Verify deployed revision
+        run: |
+          set -euo pipefail
+
+          app="speech-transcript-worker"
+          rg="${{ vars.RG_NAME }}"
+          expected_image="${{ vars.ACR_LOGIN_SERVER }}/speech-transcript-worker-comp:${{ github.event.workflow_run.head_sha }}"
+
+          for attempt in {1..60}; do
+            app_state="$(az containerapp show \
+              --name "$app" \
+              --resource-group "$rg" \
+              --query properties.provisioningState \
+              --output tsv)"
+
+            revision="$(az containerapp show \
+              --name "$app" \
+              --resource-group "$rg" \
+              --query properties.latestReadyRevisionName \
+              --output tsv)"
+
+            if [[ "$app_state" == "Succeeded" && -n "$revision" ]]; then
+              details="$(az containerapp revision show \
+                --name "$app" \
+                --resource-group "$rg" \
+                --revision "$revision" \
+                --query '{active:properties.active,health:properties.healthState,provisioning:properties.provisioningState,image:properties.template.containers[0].image}' \
+                --output json)"
+
+              echo "$details"
+
+              actual_image="$(echo "$details" | jq -r .image)"
+              health="$(echo "$details" | jq -r .health)"
+              provisioning="$(echo "$details" | jq -r .provisioning)"
+
+              if [[ "$actual_image" == "$expected_image" && "$health" == "Healthy" && "$provisioning" == "Provisioned" ]]; then
+                echo "::notice title=Deployment verified::Revision $revision is active, healthy, provisioned, and running the expected image."
+                exit 0
+              fi
+            fi
+
+            sleep 10
+          done
+
+          echo "Deployment verification timed out."
+          exit 1
