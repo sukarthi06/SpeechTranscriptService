@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   deploy:
+    name: Deploy to Azure Container App
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
@@ -106,7 +107,8 @@ jobs:
               "RabbitMQ__Username=$RABBITMQ_USERNAME" \
               "RabbitMQ__Password=secretref:rabbitmq-password" \
               "OpenAI__ApiKey=secretref:openai-api-key" \
-              "Azure__StorageConnectionString=secretref:storage-connection-string"
+              "Azure__StorageConnectionString=secretref:storage-connection-string" \
+              "RecordingGrpcService__Address=${{ vars.RECORDING_GRPC_ADDRESS }}"
           echo "::notice title=Container App deployment completed::Azure accepted and completed the image update."
 
       - name: Verify deployed revision
