@@ -14,8 +14,10 @@ service RecordingChunkService {
   rpc UpdateRecordingChunk (UpdateRecordingChunkRequest) returns (google.protobuf.Empty);
   rpc UpdateRecordingChunkWav (UpdateRecordingChunkWavRequest) returns (UpdateRecordingChunkWavResponse);
   rpc UpdateRecordingChunkTranscriptPath (UpdateRecordingChunkTranscriptPathRequest) returns (UpdateRecordingChunkTranscriptPathResponse);
+  rpc UpdateRecordingChunkDiarizationPath (UpdateRecordingChunkDiarizationPathRequest) returns (UpdateRecordingChunkDiarizationPathResponse);
   rpc GetSubsequentRecordingChunks(GetSubsequentRecordingChunksRequest) returns (GetSubsequentRecordingChunksResponse);
   rpc IsChunksReadyForConsolidation(IsChunksReadyRequest) returns (IsChunksReadyResponse);
+  rpc IsChunksReadyForConsolidateDiarization(IsChunksDiarizationReadyRequest) returns (IsChunksDiarizationReadyResponse);
 }
 
 message RecordingChunkRequest {
@@ -69,11 +71,28 @@ message UpdateRecordingChunkTranscriptPathResponse {
   bool is_success = 1;
 }
 
+message UpdateRecordingChunkDiarizationPathRequest {
+  string chunk_id = 1;
+  string diarization_path = 2;
+}
+
+message UpdateRecordingChunkDiarizationPathResponse {
+  bool is_success = 1;
+}
+
 message IsChunksReadyRequest{
 	string recording_id = 1;
 }
 
 message IsChunksReadyResponse{
+	bool is_success = 1;
+}
+
+message IsChunksDiarizationReadyRequest{
+	string recording_id = 1;
+}
+
+message IsChunksDiarizationReadyResponse{
 	bool is_success = 1;
 }
 
@@ -86,5 +105,6 @@ message RecordingChunkDto {
   google.protobuf.Duration end_time = 6;
   double chunk_duration = 7;
   string wav_path = 8;
-  string transcript_path = 9;  
+  string transcript_path = 9;
+  string diarization_path = 10;
 }

@@ -89,18 +89,36 @@ jobs:
           echo "Timed out waiting for secret update."
           exit 1
 
+      - name: Set OTLP headers as Container App secret
+        env:
+          OTLP_HEADERS: ${{ secrets.GRAFANA_OTLP_AUTH_HEADER }}
+        run: |
+          az containerapp secret set \
+            --name speech-transcript-worker \
+            --resource-group ${{ vars.RG_NAME }} \
+            --secrets "otlp-headers=$OTLP_HEADERS"
+          echo "::notice title=Secret update completed::OTLP headers secret was updated."
+
+      - name: Wait for OTLP headers secret update
+        run: |
+          sleep 15
+          state="$(az containerapp show --name speech-transcript-worker --resource-group ${{ vars.RG_NAME }} --query properties.provisioningState --output tsv)"
+          echo "::notice title=Secret update check::Container App provisioning state: $state."
+
       - name: Deploy to Container App
         env:
           RABBITMQ_HOST: ${{ secrets.RABBITMQ_HOST }}
           RABBITMQ_VHOST: ${{ secrets.RABBITMQ_VHOST }}
           RABBITMQ_USERNAME: ${{ secrets.RABBITMQ_USERNAME }}
+          OTLP_ENDPOINT: ${{ vars.OTLP_ENDPOINT }}
+          OTLP_PROTOCOL: ${{ vars.OTLP_PROTOCOL }}
         run: |
           az containerapp update \
             --name speech-transcript-worker \
             --resource-group ${{ vars.RG_NAME }} \
             --image ${{ vars.ACR_LOGIN_SERVER }}/speech-transcript-worker-comp:${{ github.event.workflow_run.head_sha }} \
             --set-env-vars \
-              "ASPNETCORE_ENVIRONMENT=UAT" \
+              "DOTNET_ENVIRONMENT=UAT" \
               "RabbitMQ__Host=$RABBITMQ_HOST" \
               "RabbitMQ__Port=5671" \
               "RabbitMQ__VirtualHost=$RABBITMQ_VHOST" \
@@ -108,7 +126,10 @@ jobs:
               "RabbitMQ__Password=secretref:rabbitmq-password" \
               "OpenAI__ApiKey=secretref:openai-api-key" \
               "Azure__StorageConnectionString=secretref:storage-connection-string" \
-              "RecordingGrpcService__Address=${{ vars.RECORDING_GRPC_ADDRESS }}"
+              "RecordingGrpcService__Address=${{ vars.RECORDING_GRPC_ADDRESS }}" \
+              "Otlp__Endpoint=$OTLP_ENDPOINT" \
+              "Otlp__Protocol=$OTLP_PROTOCOL" \
+              "Otlp__Headers=secretref:otlp-headers"
           echo "::notice title=Container App deployment completed::Azure accepted and completed the image update."
 
       - name: Verify deployed revision

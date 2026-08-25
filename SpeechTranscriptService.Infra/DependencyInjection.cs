@@ -2,6 +2,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using RecordingGrpcService.Grpc.Protos;
 using SpeechTranscriptService.Domain.Entities;
 using SpeechTranscriptService.Infra.Grpc;
@@ -64,6 +68,40 @@ public static class DependencyInjection
         services.AddSingleton<ITranscriptObjectStorage, AzureBlobTranscriptStorage>();
 
         #endregion
+
+        return services;
+    }
+
+    public static IServiceCollection AddObservability(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var otlpEndpoint = configuration["Otlp:Endpoint"] ?? "http://localhost:4317";
+        var otlpProtocol = configuration["Otlp:Protocol"] ?? "grpc";
+        var otlpHeaders = configuration["Otlp:Headers"];
+        var serviceName = configuration["Serilog:Properties:Application"] ?? "SpeechTranscriptService";
+        var exportProtocol = otlpProtocol.Equals("http/protobuf", StringComparison.OrdinalIgnoreCase)
+            ? OtlpExportProtocol.HttpProtobuf
+            : OtlpExportProtocol.Grpc;
+
+        void ConfigureExporter(OtlpExporterOptions otlp)
+        {
+            otlp.Endpoint = new Uri(otlpEndpoint);
+            otlp.Protocol = exportProtocol;
+            if (!string.IsNullOrEmpty(otlpHeaders))
+                otlp.Headers = otlpHeaders;
+        }
+
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(serviceName: serviceName))
+            .WithTracing(tracing => tracing
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(ConfigureExporter))
+            .WithMetrics(metrics => metrics
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation()
+                .AddOtlpExporter(ConfigureExporter));
 
         return services;
     }

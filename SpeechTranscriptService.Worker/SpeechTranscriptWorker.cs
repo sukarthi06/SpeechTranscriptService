@@ -33,13 +33,12 @@ namespace SpeechTranscriptService.Worker
 
                     await messageConsumer.AcknowledgeAsync(consumed.DeliveryTag, stoppingToken);
                 }
-                catch
+                catch (Exception ex)
                 {
                     await messageConsumer.RejectAsync(consumed.DeliveryTag, stoppingToken);
-                    logger.LogError("Failed to process message with ChunkId: {ChunkId} delivery tag {DeliveryTag}",
+                    logger.LogError(ex, "Failed to process message with ChunkId: {ChunkId} delivery tag {DeliveryTag}",
                         consumed.Payload.ChunkId, consumed.DeliveryTag);
                 }
-                //await Task.Delay(3000, stoppingToken); // Simulate some delay
             };
             await messageConsumer.StartConsumingAsync(stoppingToken);
             //var recordingId = RecordingId.Of(Guid.Parse("6f4bb276-73b4-4572-9f05-5edb28960ae5"));
@@ -109,7 +108,7 @@ namespace SpeechTranscriptService.Worker
 
             if (!string.IsNullOrEmpty(mergedTranscriptText))
             {
-                var destinationPath = $"{DateTime.UtcNow:yyyy-MM-dd}/{recordingId}.json";
+                var destinationPath = $"mergedtranscripts/{DateTime.UtcNow:yyyy-MM-dd}/{recordingId.Value}.json";
                 var recordingTranscript = new RecordingTranscript { RecordingId = recordingId, Text = mergedTranscriptText };
 
                 var uploadResponse = await transcriptStorage.UploadRecordingTranscriptAsync(recordingTranscript,

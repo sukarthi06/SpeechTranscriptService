@@ -14,7 +14,7 @@ public class TranscriptStorage(
     public async Task<string?> SaveAsync(
         TranscriptionResponse transcription, RecordingId recordingId, ChunkId chunkId, CancellationToken ct)
     {
-        string path = $"{DateTime.UtcNow:yyyy-MM-dd}/{recordingId}/{chunkId}.json"; ;
+        string path = $"transcripts/{DateTime.UtcNow:yyyy-MM-dd}/{chunkId.Value}.json";
         var result = await transcriptStorage.UploadTranscriptAsync(path, transcription, ct);
 
         if (result)
@@ -38,7 +38,7 @@ public class TranscriptStorage(
     public async Task<TranscriptionResponse?> DownloadTranscriptAsync(ChunkId chunkId, string path, CancellationToken cancellationToken)
     {
         var response = await transcriptStorage.DownloadTranscriptAsync(chunkId, path, cancellationToken);
-        throw new NotImplementedException();
+        return response;
     }
 
     public async Task<bool> UploadRecordingTranscriptAsync(
