@@ -38,7 +38,7 @@ builder.Services.AddSerilog((services, loggerConfiguration) =>
                 options.Headers = otlpHeaders
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(kv => kv.Split('=', 2))
-                    .ToDictionary(parts => parts[0].Trim(), parts => parts[1].Trim());
+                    .ToDictionary(parts => parts[0].Trim(), parts => Uri.UnescapeDataString(parts[1].Trim()));
             }
         });
 });

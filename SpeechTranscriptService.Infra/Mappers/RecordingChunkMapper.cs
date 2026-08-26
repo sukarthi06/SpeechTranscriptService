@@ -12,11 +12,13 @@ public partial class RecordingChunkMapper : MapperBase
     [MapperIgnoreSource(nameof(RecordingChunkDto.StartTime))]
     [MapperIgnoreSource(nameof(RecordingChunkDto.EndTime))]
     [MapperIgnoreSource(nameof(RecordingChunkDto.ChunkDuration))]
+    [MapperIgnoreSource(nameof(RecordingChunkDto.DiarizationPath))]
     public partial RecordingChunk ToDomain(RecordingChunkDto dto);
 
     [MapperIgnoreTarget(nameof(RecordingChunkDto.StartTime))]
     [MapperIgnoreTarget(nameof(RecordingChunkDto.EndTime))]
     [MapperIgnoreTarget(nameof(RecordingChunkDto.ChunkDuration))]
+    [MapperIgnoreTarget(nameof(RecordingChunkDto.DiarizationPath))]
     public partial RecordingChunkDto ToDto(RecordingChunk entity);
 
     // ---- List mapping (used for GetRecordingChunkResponse's repeated field) ----
