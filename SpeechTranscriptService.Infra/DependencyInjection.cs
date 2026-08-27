@@ -84,9 +84,8 @@ public static class DependencyInjection
             ? OtlpExportProtocol.HttpProtobuf
             : OtlpExportProtocol.Grpc;
 
-        var httpProtobuf = exportProtocol == OtlpExportProtocol.HttpProtobuf;
-        var tracesEndpoint = new Uri(httpProtobuf ? $"{otlpEndpoint.TrimEnd('/')}/v1/traces" : otlpEndpoint);
-        var metricsEndpoint = new Uri(httpProtobuf ? $"{otlpEndpoint.TrimEnd('/')}/v1/metrics" : otlpEndpoint);
+        var tracesEndpoint = new Uri(configuration["Otlp:TracesEndpoint"] ?? otlpEndpoint);
+        var metricsEndpoint = new Uri(configuration["Otlp:MetricsEndpoint"] ?? otlpEndpoint);
 
         void ConfigureTraceExporter(OtlpExporterOptions otlp)
         {
