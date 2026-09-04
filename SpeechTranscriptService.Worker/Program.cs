@@ -6,6 +6,8 @@ using SpeechTranscriptService.Worker;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAppService(builder.Configuration);
 if (!builder.Environment.IsEnvironment("Local"))

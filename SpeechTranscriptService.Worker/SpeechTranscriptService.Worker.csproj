@@ -15,5 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SpeechTranscriptService.Application\SpeechTranscriptService.Application.csproj" />
+    <ProjectReference Include="..\SpeechTranscriptService.ServiceDefaults\SpeechTranscriptService.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>
