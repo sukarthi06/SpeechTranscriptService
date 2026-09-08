@@ -52,6 +52,7 @@ public class TranscriptService(HttpClient httpClient,
                 content.Add(new StringContent("en"), "language");
                 content.Add(new StringContent("verbose_json"), "response_format");
                 content.Add(new StringContent("segment"), "timestamp_granularities[]");
+                content.Add(new StringContent("word"), "timestamp_granularities[]");
 
                 response = await httpClient.PostAsync(options.Value.BaseUrl, content, cancellationToken);
                 response.EnsureSuccessStatusCode();

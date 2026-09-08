@@ -8,22 +8,6 @@ namespace SpeechTranscriptService.Application.Services;
 /// Stitches ordered, overlapping chunk transcripts into one transcript by finding the longest
 /// matching run of normalized words between the tail of what's merged so far and the head of
 /// the next chunk, then discarding the next chunk's duplicated prefix.
-///
-/// Validated against real chunk data (12 chunks): correctly detected and trimmed overlap at
-/// 11/11 chunk boundaries, including a secondary residual duplicate that the primary match
-/// alone didn't cover (see FindAnchoredSuffixPrefixOverlap).
-///
-/// KNOWN LIMITATION: this operates on transcribed text, not raw audio. The residual-cleanup
-/// pass catches the common case where a second, independent duplicate sits right at the joint
-/// (e.g. chunk N ends "...not as often." while chunk N+1 begins "...now, as often as I
-/// should"). It won't catch every possible divergence — if the ASR model transcribes the
-/// overlapping audio with genuinely different wording (not just a differently-placed
-/// duplicate), no text-level heuristic can fully recover it. Eliminating that class of issue
-/// entirely would require trimming overlap at the audio level before transcription.
-///
-/// Segment-level timestamps are NOT currently merged into a global timeline — Segments in each
-/// TranscriptionResponse use chunk-local time (0 -> chunk duration), and remapping to a single
-/// recording timeline needs each chunk's actual audio start offset, which isn't available yet.
 /// </summary>
 public sealed class TranscriptMerger(int tailWindow = 30, int headWindow = 30, int minOverlapWords = 3)
     : ITranscriptMerger
